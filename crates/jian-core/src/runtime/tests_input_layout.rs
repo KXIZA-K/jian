@@ -678,3 +678,32 @@ fn raw_pointer_handler_executes_end_to_end() {
         "onRawPointer ActionList must execute on Move phases too"
     );
 }
+
+#[test]
+fn binding_rematerialization_keeps_dynamic_state_while_reload_conforms_it() {
+    let mut runtime = Runtime::new();
+    runtime.load_str(r#"{"version":"1.1","children":[{"type":"text","id":"label","content":"Before","width":100,"height":20}]}"#).unwrap();
+    runtime.state.app_set("count", serde_json::json!(3));
+    runtime
+        .state
+        .page_set("", "draft", serde_json::json!("editing"));
+    runtime
+        .state
+        .self_set("", "label", "selected", serde_json::json!(true));
+    let schema = runtime.document.as_ref().unwrap().schema.clone();
+    runtime.rematerialize_document(schema.clone()).unwrap();
+    assert_eq!(runtime.state.app_get("count").unwrap().as_i64(), Some(3));
+    assert_eq!(
+        runtime.state.page_snapshot("").get("draft"),
+        Some(&serde_json::json!("editing"))
+    );
+    assert_eq!(
+        runtime.state.self_snapshot("", "label").get("selected"),
+        Some(&serde_json::json!(true))
+    );
+    runtime.replace_document(schema).unwrap();
+    assert!(
+        runtime.state.app_get("count").is_none(),
+        "actual document reload still prunes undeclared state"
+    );
+}

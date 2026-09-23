@@ -67,6 +67,14 @@ impl Runtime {
         self.replace_document_for_path_mode(schema, preferred_path.as_deref(), None, true, false)
     }
 
+    /// Reinstall a binding-materialized copy of the same document without
+    /// applying hot-reload state conformance or cancelling live actions.
+    /// The caller must retain document identity and solve layout afterward.
+    pub fn rematerialize_document(&mut self, schema: PenDocument) -> CoreResult<()> {
+        let preferred_path = self.active_screen_path.clone();
+        self.replace_document_for_path_mode(schema, preferred_path.as_deref(), None, false, false)
+    }
+
     pub(crate) fn replace_document_for_path(
         &mut self,
         schema: PenDocument,

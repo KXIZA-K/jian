@@ -61,11 +61,22 @@ pub enum TextGrowth {
     FixedWidthHeight,
 }
 
+/// Optional source paint hint; absence preserves backend selection.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, schemars::JsonSchema)]
+#[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
+#[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
+#[serde(rename_all = "lowercase")]
+pub enum TextRasterization {
+    Grayscale,
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]
 #[cfg_attr(feature = "export-ts", derive(ts_rs::TS))]
 #[cfg_attr(feature = "export-ts", ts(export, export_to = "ops.ts"))]
 #[serde(rename_all = "camelCase")]
 pub struct TextNode {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_rasterization: Option<TextRasterization>,
     #[serde(flatten)]
     pub base: PenNodeBase,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -140,6 +151,17 @@ pub fn canonical_line_height_multiplier(line_height: Option<f64>) -> Option<f64>
 #[cfg(test)]
 mod tests {
     use super::canonical_line_height_multiplier;
+
+    #[test]
+    fn rasterization_hint_roundtrips_and_rejects_unknown_modes() {
+        let plain: super::TextNode = serde_json::from_str(r#"{"id":"t","content":"Label"}"#).unwrap();
+        assert!(plain.text_rasterization.is_none());
+        assert!(!serde_json::to_string(&plain).unwrap().contains("textRasterization"));
+        let gray: super::TextNode = serde_json::from_str(r#"{"id":"t","content":"Label","textRasterization":"grayscale"}"#).unwrap();
+        assert_eq!(gray.text_rasterization, Some(super::TextRasterization::Grayscale));
+        assert!(serde_json::to_string(&gray).unwrap().contains("\"textRasterization\":\"grayscale\""));
+        assert!(serde_json::from_str::<super::TextNode>(r#"{"id":"t","content":"Label","textRasterization":"lcd"}"#).is_err());
+    }
 
     #[test]
     fn canonical_line_height_accepts_only_finite_unitless_multipliers() {

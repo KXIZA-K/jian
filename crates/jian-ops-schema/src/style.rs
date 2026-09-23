@@ -65,6 +65,8 @@ pub enum ImageFillMode {
     Crop,
     Tile,
     Stretch,
+    /// CSS background-repeat anchored at the top-left, not Figma's centered Tile.
+    CssRepeat,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, schemars::JsonSchema)]

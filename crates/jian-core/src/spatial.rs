@@ -145,6 +145,19 @@ impl SpatialIndex {
         self.tree.size() == 0
     }
 
+    /// Mask non-interactive nodes after the host applies transient visibility.
+    /// Rebuild the authoritative index before calling this again to restore
+    /// nodes that became visible; this method never invents new hit targets.
+    pub fn retain(&mut self, mut keep: impl FnMut(NodeKey) -> bool) {
+        let items = self
+            .tree
+            .iter()
+            .filter(|item| keep(item.key))
+            .cloned()
+            .collect();
+        self.tree = RTree::bulk_load(items);
+    }
+
     /// Returns all nodes whose bbox contains the point.
     pub fn hit(&self, p: Point) -> Vec<NodeKey> {
         let env = AABB::from_point([p.x, p.y]);

@@ -136,6 +136,10 @@ fn emit(c: &mut Chunk, e: &Expr) -> Result<(), Diagnostic> {
             let jmp_end = c.push(OpCode::Jump(0));
             let else_start = c.ops.len();
             c.patch_jump(jmp_false, else_start);
+            // JumpIfFalse preserves a falsy operand for logical `&&`.
+            // The inverse jump falls through and pops that known-falsy value.
+            // This preserves the packed opcode format and `&&`/`||` semantics.
+            c.push(OpCode::JumpIfTrue(0));
             emit(c, el)?;
             c.patch_jump(jmp_end, c.ops.len());
         }
@@ -201,6 +205,48 @@ mod tests {
 
     fn compile_src(s: &str) -> Chunk {
         compile(&parse(s).unwrap()).unwrap()
+    }
+
+    #[test]
+    fn ternary_results_compose_without_leaking_conditions() {
+        use crate::expression::Expression;
+        use crate::state::StateGraph;
+        let state = StateGraph::new(std::rc::Rc::new(crate::signal::scheduler::Scheduler::new()));
+        for mask in 0u32..16 {
+            let source = (0..4)
+                .map(|bit| format!("({} ? 1 : 0)", mask & (1 << bit) != 0))
+                .collect::<Vec<_>>()
+                .join(" + ");
+            let (value, _) = Expression::compile(&source)
+                .unwrap()
+                .eval(&state, None, None);
+            assert_eq!(value.as_f64(), Some(mask.count_ones() as f64), "{source}");
+        }
+    }
+
+    #[test]
+    fn ternaries_preserve_container_and_logical_operand_boundaries() {
+        use crate::expression::Expression;
+        use crate::state::StateGraph;
+        let state = StateGraph::new(std::rc::Rc::new(crate::signal::scheduler::Scheduler::new()));
+        for (source, expected) in [
+            (
+                "[9, false ? 1 : 2, true ? 3 : 4]",
+                serde_json::json!([9, 2, 3]),
+            ),
+            (
+                "{a: false ? 1 : 2, b: 9}",
+                serde_json::json!({"a": 2, "b": 9}),
+            ),
+            ("10 + (false ? 1 : (false ? 2 : 3))", serde_json::json!(13)),
+            ("(false && 9) == false", serde_json::json!(true)),
+            ("(7 || 9) + (false ? 1 : 2)", serde_json::json!(9)),
+        ] {
+            let (value, _) = Expression::compile(source)
+                .unwrap()
+                .eval(&state, None, None);
+            assert_eq!(value.0, expected, "{source}");
+        }
     }
 
     #[test]

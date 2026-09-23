@@ -34,6 +34,7 @@ pub enum ImageDrawMode {
     Crop,
     Tile,
     Stretch,
+    CssRepeat,
 }
 
 /// Compositing mode applied to an isolated paint layer or raster image.
@@ -151,6 +152,8 @@ impl TextLayout {
 
 /// Backend abstraction used by cross-platform widgets.
 pub trait Painter {
+    /// Per-node paint hint. Hosts without LCD text may leave this as a no-op.
+    fn set_text_grayscale(&mut self, _grayscale: bool) {}
     fn begin_frame(&mut self);
     fn end_frame(&mut self);
 

@@ -257,11 +257,11 @@ impl LayoutEngine {
         // (Text / IconFont / Image / …) so leaf sizes propagate into
         // flex measurements.
         for (key, data) in doc_tree.nodes.iter() {
-            let mut style = if responsive {
-                resolve::node_to_style_responsive(&data.schema, &mut self.constraint_lints)
-            } else {
-                resolve::node_to_style(&data.schema)
-            };
+            // Explicit min/max sizes belong to the node, not to responsive
+            // viewport behavior. Keep legacy root origins and constraint mode,
+            // but do not discard captured text's authored width floor.
+            let mut style =
+                resolve::node_to_style_responsive(&data.schema, &mut self.constraint_lints);
             // Direction-aware flex_shrink: a child whose MAIN-AXIS size is a
             // fixed Number must not be shrunk below it. `node_to_style` only
             // pins fully-fixed squares (both axes Number); here, with the parent
@@ -328,6 +328,10 @@ impl LayoutEngine {
         Ok(roots)
     }
 
+    /// Opt in to fractional canvas coordinates after build() resets the tree.
+    pub fn preserve_subpixel_layout(&mut self) {
+        self.tree.disable_rounding();
+    }
     pub fn compute(&mut self, root: NodeId, available: (f32, f32)) -> CoreResult<()> {
         let space = Size {
             width: AvailableSpace::Definite(available.0),

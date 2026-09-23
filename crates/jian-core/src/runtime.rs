@@ -12,8 +12,8 @@
 //! `rt.dispatch_pointer(event)` and, each frame, `rt.tick(now)`.
 
 use crate::action::services::{
-    AsyncFeedback, ClipboardService, FeedbackSink, NetworkClient, PlatformService,
-    Router as RouterSvc, StorageBackend,
+    ActionObserver, AnimationSink, AsyncFeedback, ClipboardService, FeedbackSink, NetworkClient,
+    PlatformService, Router as RouterSvc, StorageBackend, UiMutationSink,
 };
 use crate::action::{ExecOutcome, SharedRegistry, TaskClock, TaskQueue};
 use crate::binding::DeferredBindingQueue;
@@ -60,6 +60,7 @@ mod ime_handshake;
 mod keyboard_input;
 mod layout_runtime;
 mod lifecycle;
+mod lifecycle_dispatch;
 mod pointer_input;
 mod pump;
 mod reload_resources;
@@ -69,6 +70,7 @@ mod variant_swap;
 mod websocket_runtime;
 
 pub use ime_handshake::{ImeConfirmOutcome, ImeControlOp, ImeHost, ImeSnapshot};
+pub use lifecycle_dispatch::LifecycleScope;
 pub use pump::FrameDirective;
 pub use text_input::{EditableInputKind, EditableTextSnapshot};
 pub use variant_swap::{ParkedBuild, SwapState};
@@ -151,6 +153,29 @@ pub struct Runtime {
     pub clipboard: Rc<dyn ClipboardService>,
     pub platform: Rc<dyn PlatformService>,
     pub capabilities: Rc<dyn CapabilityGate>,
+    /// R3 effect sink — every effect-producing action hands its request
+    /// here. `NullEffectSink` for non-Preview runtimes; hosts override
+    /// via `set_effect_sink`.
+    pub effect_sink: Rc<dyn crate::action::services::effect_sink::EffectSink>,
+    /// R5 typed runtime-node mutation delivery. Preview installs retained
+    /// visibility/scroll state; other runtimes keep a diagnostic null sink.
+    pub ui_mutation_sink: Rc<dyn UiMutationSink>,
+    /// R7 structured animation requests. Preview installs one bounded
+    /// session timeline; ordinary runtimes keep a diagnostic null sink.
+    pub animation_sink: Rc<dyn AnimationSink>,
+    /// R9 action start/result observer used by Preview tracing.
+    pub observer: Rc<dyn ActionObserver>,
+    /// R3 action policy — `None` keeps every registered action
+    /// executable (today's behavior); Preview installs the fixed
+    /// allowlist via `set_policy`.
+    pub policy: Option<Rc<dyn crate::action::policy::ActionPolicy>>,
+    /// Host-certified activation id for the NEXT synchronous action
+    /// chain (set by the dispatching input path, taken by
+    /// `make_action_ctx`, and therefore expired for every later
+    /// delayed/async chain automatically).
+    pending_activation: std::cell::Cell<Option<u64>>,
+    /// R9 debugger pause gate, composed with variant-swap input freezing.
+    debug_paused: bool,
     /// Audit log attached to the capability gate. `None` for the default
     /// `Runtime::new()` (DummyCapabilityGate has nothing to audit); set
     /// when the runtime is built via `new_from_document`.

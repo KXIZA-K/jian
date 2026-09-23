@@ -281,7 +281,7 @@ fn tabs_layout_and_both_collectors_use_only_the_active_panel() {
         .iter()
         .filter_map(|command| match command {
             crate::render::ScenePaintCommand::Draw(op) => Some(op),
-            crate::render::ScenePaintCommand::RichText { .. } | _ => None,
+            _ => None,
         })
         .collect();
     assert!(structured_draws.iter().any(|op| geometry_paint(op)
@@ -650,11 +650,11 @@ fn static_text_inputs_share_authored_and_transparent_widget_colors() {
     assert_eq!(unstyled.len(), 2, "transparent input emits no surface op");
     assert!(matches!(
         &unstyled[0],
-        DrawOp::Text(run) if run.color == Color::rgba(0x9c, 0xa3, 0xaf, 0xa6)
+        DrawOp::Text(run) if run.color == Color::rgba(0x66, 0x66, 0x66, 0xff)
     ));
     assert_eq!(
         rect_paint(&unstyled[1]).fill,
-        Some(Color::rgb(0x9c, 0xa3, 0xaf))
+        Some(Color::rgb(0x33, 0x33, 0x33))
     );
 }
 

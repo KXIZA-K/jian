@@ -171,6 +171,7 @@ impl SceneNode {
             arc_inner_radius: None,
             polygon_sides: 3,
             image_src: None,
+            video: None,
             image_src_id: 0,
             image_fit: SceneImageFit::Fill,
             image_blend_mode: ImageBlendMode::Normal,

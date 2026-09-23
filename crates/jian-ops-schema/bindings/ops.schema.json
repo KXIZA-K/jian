@@ -145,6 +145,17 @@
           "type": "null"
         }
       ]
+    },
+    "motion": {
+      "description": "Authored document motion preference. Hosts may reduce further.",
+      "anyOf": [
+        {
+          "$ref": "#/definitions/MotionPreference"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "definitions": {
@@ -484,6 +495,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -525,6 +543,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "width": {
@@ -602,6 +639,16 @@
                 "boolean",
                 "null"
               ]
+            },
+            "stickyChildren": {
+              "description": "Direct child ids that remain pinned while this container scrolls.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
             },
             "cornerRadius": {
               "anyOf": [
@@ -846,6 +893,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -887,6 +941,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "width": {
@@ -964,6 +1037,16 @@
                 "boolean",
                 "null"
               ]
+            },
+            "stickyChildren": {
+              "description": "Direct child ids that remain pinned while this container scrolls.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
             },
             "cornerRadius": {
               "anyOf": [
@@ -1208,6 +1291,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -1249,6 +1339,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "width": {
@@ -1326,6 +1435,16 @@
                 "boolean",
                 "null"
               ]
+            },
+            "stickyChildren": {
+              "description": "Direct child ids that remain pinned while this container scrolls.",
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "type": "string"
+              }
             },
             "cornerRadius": {
               "anyOf": [
@@ -1637,6 +1756,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -1678,6 +1804,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -1909,6 +2054,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -1950,6 +2102,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             }
           }
@@ -2181,6 +2352,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -2222,6 +2400,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -2512,6 +2709,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -2553,6 +2757,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -2882,6 +3105,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -2923,6 +3153,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -3231,6 +3480,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -3272,6 +3528,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -3432,6 +3707,16 @@
                 "null"
               ]
             },
+            "video": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/VideoMeta"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "state": {
               "type": [
                 "object",
@@ -3584,6 +3869,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -3625,6 +3917,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -3872,6 +4183,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -3913,6 +4231,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -4222,6 +4559,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -4263,6 +4607,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -4552,6 +4915,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -4593,6 +4963,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -4869,6 +5258,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -4910,6 +5306,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -5192,6 +5607,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -5233,6 +5655,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -5530,6 +5971,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -5571,6 +6019,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -5853,6 +6320,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -5894,6 +6368,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -6218,6 +6711,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -6261,6 +6761,25 @@
                 "type": "string"
               }
             },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
+              }
+            },
             "minWidth": {
               "type": [
                 "number",
@@ -6292,7 +6811,7 @@
           }
         },
         {
-          "description": "Progress indicator. Display-only (not focusable/keyboard-driven): `value` is read from the state graph via `bindings.value`. `max` defaults to 100; `indeterminate` shows an animated unknown-progress state and ignores `value`.",
+          "description": "Progress indicator. Display-only (not focusable/keyboard-driven): `value` is read from the state graph via `bindings.value`. `max` defaults to 100; `indeterminate` shows a deterministic unknown-progress state and ignores `value`. Hosts may animate that marker, while static and headless renderers intentionally emit the same stable frame.",
           "type": "object",
           "required": [
             "id",
@@ -6548,6 +7067,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -6589,6 +7115,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -6882,6 +7427,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -6923,6 +7475,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             },
             "minWidth": {
@@ -7141,6 +7712,13 @@
                 "null"
               ]
             },
+            "pin": {
+              "description": "Keep this node at its authored viewport position while its nearest scrollable ancestor moves ordinary content.",
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
             "flipX": {
               "type": [
                 "boolean",
@@ -7182,6 +7760,25 @@
               ],
               "additionalProperties": {
                 "type": "string"
+              }
+            },
+            "transition": {
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/Transition"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "animations": {
+              "type": [
+                "array",
+                "null"
+              ],
+              "items": {
+                "$ref": "#/definitions/NodeAnimation"
               }
             }
           }
@@ -7416,6 +8013,67 @@
             "additionalProperties": true
           }
         },
+        "onPressStart": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "onPressEnd": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "onPressCancel": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "onSwipe": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "onContextMenu": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
+        "onRawPointer": {
+          "description": "Raw pointer escape-hatch: fired for pointer Down/Move/Up when the node (or an ancestor) declares `gestures.rawPointer`. `SemanticEvent::RawPointer` maps here via `gesture::semantic::handler_key`; the runtime was already able to execute it dynamically (it survives round-trip through `extra`), this field makes it typed so AOT covers it too.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        },
         "onChange": {
           "type": [
             "array",
@@ -7486,7 +8144,8 @@
             "additionalProperties": true
           }
         }
-      }
+      },
+      "additionalProperties": true
     },
     "NodeLifecycleHooks": {
       "type": "object",
@@ -7510,8 +8169,29 @@
             "type": "object",
             "additionalProperties": true
           }
+        },
+        "disabledEvents": {
+          "description": "Event hooks disabled for this lifecycle scope (`[\"onUnmount\", ...]`). Order is preserved exactly as authored; the schema layer never dedups or rewrites it.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "interactionOrder": {
+          "description": "Explicit hook evaluation order (`[\"onMount\", \"onUnmount\", ...]`). Order is preserved exactly as authored; the schema layer never dedups or rewrites it.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "additionalProperties": true
     },
     "SemanticsMeta": {
       "type": "object",
@@ -7694,8 +8374,73 @@
             "boolean",
             "null"
           ]
+        },
+        "doubleTapTimeout": {
+          "description": "Double-tap detection window in ms (default 300).",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "doubleTapSlop": {
+          "description": "Max distance between two taps to still count as a double-tap (px).",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "swipeMinDistance": {
+          "description": "Minimum travel distance for a swipe to claim (px).",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "swipeMinVelocity": {
+          "description": "Minimum velocity for a swipe to claim (px/s).",
+          "type": [
+            "number",
+            "null"
+          ],
+          "format": "double"
+        },
+        "axisLock": {
+          "description": "Axis constraint applied when judging a swipe.",
+          "anyOf": [
+            {
+              "$ref": "#/definitions/AxisLock"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "disabledEvents": {
+          "description": "Event hooks disabled on this node (`[\"onHoverEnter\", ...]`). Order is preserved exactly as authored; the schema layer never dedups or rewrites the list.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "interactionOrder": {
+          "description": "Explicit handler evaluation order (`[\"onSwipe\", \"onTap\", ...]`). Order is preserved exactly as authored; the schema layer never dedups or rewrites the list.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "additionalProperties": true
     },
     "ScrollBehavior": {
       "type": "string",
@@ -7703,6 +8448,31 @@
         "auto",
         "contain",
         "none"
+      ]
+    },
+    "AxisLock": {
+      "oneOf": [
+        {
+          "description": "No axis constraint — the swipe direction is judged freely.",
+          "type": "string",
+          "enum": [
+            "auto"
+          ]
+        },
+        {
+          "description": "Horizontal movement locks the vertical axis.",
+          "type": "string",
+          "enum": [
+            "horizontal"
+          ]
+        },
+        {
+          "description": "Vertical movement locks the horizontal axis.",
+          "type": "string",
+          "enum": [
+            "vertical"
+          ]
+        }
       ]
     },
     "NavigationRoute": {
@@ -7855,6 +8625,172 @@
         "color_burn",
         "hard_light",
         "exclusion"
+      ]
+    },
+    "Transition": {
+      "description": "A node-level transition applied to runtime paint changes.",
+      "type": "object",
+      "properties": {
+        "durationMs": {
+          "default": 200,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "easing": {
+          "default": "standard",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Easing"
+            }
+          ]
+        },
+        "properties": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "Easing": {
+      "description": "CSS/Material-style easing names accepted by document motion declarations.",
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": [
+            "linear",
+            "ease",
+            "ease_in",
+            "ease_out",
+            "ease_in_out",
+            "standard",
+            "emphasized",
+            "emphasizedDecelerate",
+            "emphasizedAccelerate"
+          ]
+        },
+        {
+          "type": "object",
+          "required": [
+            "cubicBezier"
+          ],
+          "properties": {
+            "cubicBezier": {
+              "type": "array",
+              "items": [
+                {
+                  "type": "number",
+                  "format": "float"
+                },
+                {
+                  "type": "number",
+                  "format": "float"
+                },
+                {
+                  "type": "number",
+                  "format": "float"
+                },
+                {
+                  "type": "number",
+                  "format": "float"
+                }
+              ],
+              "maxItems": 4,
+              "minItems": 4
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "NodeAnimation": {
+      "description": "One time-based node animation declaration.",
+      "type": "object",
+      "required": [
+        "durationMs",
+        "keyframes",
+        "trigger"
+      ],
+      "properties": {
+        "trigger": {
+          "$ref": "#/definitions/MotionTrigger"
+        },
+        "keyframes": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Keyframe"
+          }
+        },
+        "durationMs": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "delayMs": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "easing": {
+          "default": "standard",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Easing"
+            }
+          ]
+        },
+        "iterations": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0.0
+        },
+        "fillMode": {
+          "$ref": "#/definitions/NodeAnimationFillMode"
+        },
+        "once": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "MotionTrigger": {
+      "description": "The two P1 lifecycle triggers.",
+      "type": "string",
+      "enum": [
+        "mount",
+        "inView"
+      ]
+    },
+    "Keyframe": {
+      "description": "A keyframe stop map. Values use the same JSON value representation as the action layer so colors and numbers keep their existing wire shape.",
+      "type": "object",
+      "required": [
+        "offset",
+        "values"
+      ],
+      "properties": {
+        "offset": {
+          "type": "number",
+          "format": "float"
+        },
+        "values": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "NodeAnimationFillMode": {
+      "description": "Fill policy for a node declaration. P1 intentionally keeps only the CSS policies needed by mount/inView recipes.",
+      "type": "string",
+      "enum": [
+        "forwards",
+        "none"
       ]
     },
     "SizingBehavior": {
@@ -8179,10 +9115,9 @@
           }
         },
         {
-          "description": "Native SkSL shader fill (v1). The `sksl` source is stored RAW and is treated as untrusted: the renderer entrypoint is the SkSL signature `half4 main(float2 fragCoord)`. On compile failure the backend degrades to a visible solid fill (the first `color` uniform, else mid-gray) and never panics. Mirrors the sibling gradient bodies for the shared `opacity`/`blend_mode` tail.\n\nPencil-flavoured WebGL-GLSL import is an explicit follow-up, NOT v1; v1 expects SkSL (Skia's GLSL dialect) verbatim.",
+          "description": "Native SkSL shader fill (v1). Authors may provide RAW source in `sksl` or ask the loader to expand a built-in source through `preset`. The loader currently recognizes only `\"turbulence\"`; a recognized preset wins when both fields are present, so the authored `sksl` is ignored at render time. Unknown preset strings remain on the wire for forward compatibility and are treated by the loader as if no preset were set.\n\nRAW `sksl` remains supported and is treated as untrusted: the renderer entrypoint is `half4 main(float2 fragCoord)`. On compile failure the backend degrades to a visible solid fill (the first `color` uniform, else mid-gray) and never panics. Mirrors the sibling gradient bodies for the shared `opacity`/`blend_mode` tail.\n\nPencil-flavoured WebGL-GLSL import is an explicit follow-up, NOT v1; v1 expects SkSL (Skia's GLSL dialect) verbatim.",
           "type": "object",
           "required": [
-            "sksl",
             "type"
           ],
           "properties": {
@@ -8192,9 +9127,23 @@
                 "shader"
               ]
             },
+            "preset": {
+              "description": "Loader-expanded source selector. Only `\"turbulence\"` is recognized in v1; expansion is runtime-only and is never serialized into `sksl`.",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/ShaderPresetV1"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "sksl": {
-              "description": "RAW SkSL source. Entrypoint: `half4 main(float2 fragCoord)`.",
-              "type": "string"
+              "description": "Optional RAW SkSL source. Entrypoint: `half4 main(float2 fragCoord)`.",
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "uniforms": {
               "description": "Optional named-uniform map (`float` / `vec*` / `color`). A shader may declare none; absent or empty both mean \"no uniforms\".",
@@ -8401,6 +9350,13 @@
           "type": "string"
         }
       }
+    },
+    "ShaderPresetV1": {
+      "description": "Closed v1 authoring schema for [`ShaderFillBody::preset`]. The stored field remains an open string so future preset names can round-trip through older readers without panicking or losing data.",
+      "type": "string",
+      "enum": [
+        "turbulence"
+      ]
     },
     "ShaderUniformValue": {
       "description": "One named uniform value bound into an SkSL shader fill via `RuntimeShaderBuilder` at paint time. `untagged` so the wire form is the bare JSON scalar/array the author wrote — a number is a `float`, a number array is a `vec2`/`vec3`/`vec4`, and a hex string is a `color` mapped to a `vec4` (premultiplied RGBA). The named-uniforms map on `ShaderFillBody` is optional; a shader may take none.",
@@ -9040,6 +9996,38 @@
         "tile"
       ]
     },
+    "VideoMeta": {
+      "type": "object",
+      "required": [
+        "src"
+      ],
+      "properties": {
+        "src": {
+          "type": "string"
+        },
+        "autoplay": {
+          "type": "boolean"
+        },
+        "loop": {
+          "type": "boolean"
+        },
+        "muted": {
+          "type": "boolean"
+        },
+        "holdLastFrame": {
+          "type": "boolean"
+        },
+        "clickToReplay": {
+          "type": "boolean"
+        },
+        "videoPrompt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
     "SelectOption": {
       "description": "A single dropdown option: the persisted `value` and its display `label`.",
       "type": "object",
@@ -9098,8 +10086,29 @@
             "type": "object",
             "additionalProperties": true
           }
+        },
+        "disabledEvents": {
+          "description": "Event hooks disabled for this lifecycle scope (`[\"onTerminate\", ...]`). Order is preserved exactly as authored; the schema layer never dedups or rewrites it.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "interactionOrder": {
+          "description": "Explicit hook evaluation order. Order is preserved exactly as authored; the schema layer never dedups or rewrites it.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "additionalProperties": true
     },
     "AppConfig": {
       "type": "object",
@@ -9285,7 +10294,7 @@
             "null"
           ],
           "additionalProperties": {
-            "$ref": "#/definitions/Transition"
+            "$ref": "#/definitions/Transition2"
           }
         }
       }
@@ -9327,7 +10336,7 @@
         }
       }
     },
-    "Transition": {
+    "Transition2": {
       "type": "string",
       "enum": [
         "push",
@@ -9378,8 +10387,29 @@
             "type": "object",
             "additionalProperties": true
           }
+        },
+        "disabledEvents": {
+          "description": "Event hooks disabled for this lifecycle scope (`[\"onUnmount\", ...]`). Order is preserved exactly as authored; the schema layer never dedups or rewrites it.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
+        },
+        "interactionOrder": {
+          "description": "Explicit hook evaluation order (`[\"onMount\", \"onUnmount\", ...]`). Order is preserved exactly as authored; the schema layer never dedups or rewrites it.",
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          }
         }
-      }
+      },
+      "additionalProperties": true
     },
     "LogicModuleRef": {
       "type": "object",
@@ -9595,6 +10625,14 @@
         "token",
         "component",
         "screen"
+      ]
+    },
+    "MotionPreference": {
+      "description": "The document's authored motion preference. A host may reduce further.",
+      "type": "string",
+      "enum": [
+        "full",
+        "reduced"
       ]
     }
   }

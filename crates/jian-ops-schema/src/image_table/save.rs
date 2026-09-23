@@ -401,6 +401,7 @@ mod tests {
             shadows: None,
             image_prompt: None,
             image_search_query: None,
+            video: None,
             state: None,
             bindings: None,
             events: None,
@@ -434,6 +435,7 @@ mod tests {
             logic_modules: None,
             design_md: None,
             conversion: None,
+            motion: None,
         };
 
         let ordinary = serde_json::to_string(&doc).expect("ordinary serialize");
@@ -512,6 +514,7 @@ mod tests {
                 logic_modules: None,
                 design_md: None,
                 conversion: None,
+                motion: None,
             };
             let mut output = Vec::new();
             let stats = write_document_with_extension(
@@ -654,10 +657,7 @@ mod tests {
         struct RejectWrites;
         impl std::io::Write for RejectWrites {
             fn write(&mut self, _bytes: &[u8]) -> std::io::Result<usize> {
-                Err(std::io::Error::new(
-                    std::io::ErrorKind::Other,
-                    "intentional failure",
-                ))
+                Err(std::io::Error::other("intentional failure"))
             }
 
             fn flush(&mut self) -> std::io::Result<()> {
@@ -683,6 +683,7 @@ mod tests {
             logic_modules: None,
             design_md: None,
             conversion: None,
+            motion: None,
         };
         let thumbnails = image_thumbs::capture_snapshot();
         let error = write_document_with_extension(

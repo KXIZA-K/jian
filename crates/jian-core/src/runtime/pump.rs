@@ -28,8 +28,66 @@ impl Runtime {
         self.dirty = true;
     }
 
+    /// Install the host's R3 effect sink (replaces the default
+    /// `NullEffectSink`). Every effect-producing action then hands its
+    /// request to `sink`.
+    pub fn set_effect_sink(
+        &mut self,
+        sink: Rc<dyn crate::action::services::effect_sink::EffectSink>,
+    ) {
+        self.effect_sink = sink;
+    }
+
+    /// Install the host-owned sink for typed visibility and scroll mutations.
+    pub fn set_ui_mutation_sink(&mut self, sink: Rc<dyn crate::action::services::UiMutationSink>) {
+        self.ui_mutation_sink = sink;
+    }
+
+    pub fn set_animation_sink(&mut self, sink: Rc<dyn crate::action::services::AnimationSink>) {
+        self.animation_sink = sink;
+    }
+
+    pub fn set_action_observer(
+        &mut self,
+        observer: Rc<dyn crate::action::services::ActionObserver>,
+    ) {
+        self.observer = observer;
+    }
+
+    /// Install the R3 action policy (e.g. the Preview allowlist). `None`
+    /// restores "every registered action executes".
+    pub fn set_policy(&mut self, policy: Option<Rc<dyn crate::action::policy::ActionPolicy>>) {
+        self.policy = policy;
+    }
+
+    /// Certify fresh user intent for the NEXT synchronous action chain:
+    /// `make_action_ctx` TAKES the id, so the activation applies to that
+    /// chain only and is expired for every later delayed/async chain.
+    pub fn set_activation(&mut self, activation: Option<u64>) {
+        self.pending_activation.set(activation);
+    }
+
+    /// Consume the pending activation for the input being dispatched NOW.
+    /// The input paths call this once per physical event; contexts built
+    /// anywhere else (timers, websockets, lifecycle) never see the id.
+    pub fn take_activation(&self) -> Option<u64> {
+        self.pending_activation.take()
+    }
+
     pub fn frame_presented(&mut self) {
         self.dirty = false;
+    }
+
+    pub fn debug_action_task_count(&self) -> usize {
+        self.task_queue.len()
+    }
+
+    pub fn debug_active_gesture_count(&self) -> usize {
+        self.gestures.active_gesture_count()
+    }
+
+    pub fn set_debug_paused(&mut self, paused: bool) {
+        self.debug_paused = paused;
     }
 
     pub fn pump(&mut self, now_ms: u64) -> FrameDirective {
@@ -173,6 +231,17 @@ impl Runtime {
         .into_iter()
         .flatten()
         .min()
+    }
+
+    /// Read-only next-wake query (R4 Canonical PreviewInput): the same
+    /// minimum deadline [`Runtime::pump`] reports as
+    /// `FrameDirective::next_wake_ms` — caret blink, parked IME swap,
+    /// gesture timers (deferred Tap / LongPress), scheduled action tasks,
+    /// and the task clock — WITHOUT pumping. Hosts that own their frame
+    /// loop (OpenPencil's PreviewSession) schedule this deadline and call
+    /// `pump` when it arrives, even with no new input.
+    pub fn next_wake_ms(&self) -> Option<u64> {
+        self.next_runtime_wake_ms()
     }
 
     fn has_responsive_layout_bindings(&self) -> bool {

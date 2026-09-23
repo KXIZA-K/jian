@@ -8,7 +8,7 @@ use crate::document::RuntimeDocument;
 pub fn rank(r: &dyn Recognizer, doc: &RuntimeDocument) -> (u32, u32) {
     let depth = depth_of(doc, r.node());
     let kind_priority = match r.kind() {
-        "Pan" | "Scroll" => 5,
+        "Pan" | "Scroll" | "Swipe" => 5,
         "Scale" | "Rotate" => 4,
         "LongPress" => 3,
         "Tap" | "DoubleTap" => 2,
@@ -16,6 +16,20 @@ pub fn rank(r: &dyn Recognizer, doc: &RuntimeDocument) -> (u32, u32) {
         _ => 0,
     };
     (depth, kind_priority)
+}
+
+/// Canonical arbitration order among CROSS-POINTER (multi) recognizers
+/// when several participate in one event: Scale always evaluates and
+/// emits before Rotate, with a numeric id tiebreak for future kinds.
+/// R2B2 determinism contract — this replaces the former HashMap
+/// iteration order of `PointerRouter::shared`, which made emission
+/// order vary per process.
+pub fn multi_claim_order(kind: Option<&str>) -> u8 {
+    match kind {
+        Some("Scale") => 0,
+        Some("Rotate") => 1,
+        _ => 2,
+    }
 }
 
 /// Distance from `key` to the document root. Cycle-bounded at the

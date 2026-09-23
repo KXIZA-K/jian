@@ -1,5 +1,6 @@
 use super::Runtime;
-use crate::gesture::{PointerEvent, SemanticEvent};
+use crate::gesture::pointer::PointerPhase;
+use crate::gesture::{PointerEvent, SemanticEvent, SemanticEventEnvelope};
 
 impl Runtime {
     /// Route a wheel event to the topmost hit node carrying an onScroll handler.
@@ -37,61 +38,227 @@ impl Runtime {
     /// Feed a pointer event through the gesture pipeline; any emitted
     /// semantic events are routed to the matching `events.*` handlers.
     /// Returns the semantic events for host inspection/tests.
+    ///
+    /// Source-compatible wrapper over [`Self::dispatch_pointer_events`],
+    /// which additionally carries factual pointer/gesture metadata.
     pub fn dispatch_pointer(&mut self, event: PointerEvent) -> Vec<SemanticEvent> {
+        self.dispatch_pointer_events(event)
+            .into_iter()
+            .map(|envelope| envelope.event)
+            .collect()
+    }
+
+    /// Envelope-returning pointer dispatch: same pipeline and delivery as
+    /// [`Self::dispatch_pointer`], but each `SemanticEventEnvelope` keeps
+    /// the factual `PointerFacts` captured at recognition time.
+    ///
+    /// Ordering contract (timer-before-current):
+    /// 1. pointer input at `t` drives EVERY gesture deadline `<= t` first:
+    ///    `gestures.tick_enveloped(t)` is called (arena timers — LongPress
+    ///    / touch ContextMenu — plus a buffered deferred Tap), and
+    /// 2. every due envelope's actions are delivered IMMEDIATELY — before
+    ///    any current event's slider side effects, `gestures.disabled`
+    ///    predicate evaluation, hover semantics or arena routing;
+    /// 3. `document` / `input_frozen` are re-checked AFTER the due actions
+    ///    (a due action may navigate or park input) — the current event is
+    ///    rejected when either holds, but the due delivery itself never
+    ///    depends on the freeze while input is unfrozen;
+    /// 4. while input IS frozen at entry, R2A behavior is preserved: only
+    ///    the pending deferred Tap is flushed (a parked variant swap must
+    ///    not let arena timers claim), still before any current rejection;
+    /// 5. the current event is processed;
+    /// 6. due envelopes are returned BEFORE current envelopes.
+    ///
+    /// One exception, which applies to BOTH the frozen and unfrozen
+    /// branches: a host-sent `Cancel` ticks EVERY OTHER active arena
+    /// (per-pointer isolation — a due LongPress / touch ContextMenu
+    /// belonging to a different pointer still wins timer-before-current)
+    /// but skips the canceling pointer's OWN arena. The cancel itself is
+    /// the terminal authority for its pointer, so a LongPress / touch
+    /// ContextMenu deadline that would otherwise claim at the cancel's
+    /// timestamp loses to it — the current Cancel is dispatched
+    /// immediately so ownership ends with PressCancel exactly once and
+    /// no LongPress/ContextMenu for the canceled pointer. An
+    /// already-derived due pending Tap (a completed, unrelated pointer)
+    /// still flushes.
+    ///
+    /// The `gestures.disabled` predicate is state-aware here: the runtime
+    /// pointer path supplies it to the router so dynamically disabled
+    /// handlers participate in arbitration/config decisions (DoubleTap
+    /// deferral, owner detection, Pan/Swipe/LongPress/ContextMenu
+    /// thresholds) and in delivery (handler skip, built-in activation,
+    /// `$self` scope), and so a captured Swipe session whose owner became
+    /// disabled mid-gesture cancels itself.
+    ///
+    /// Same-batch Swipe ownership: when one raw-event batch contains
+    /// `[PressCancel, Swipe]` (the arena rejects the press and accepts
+    /// the claim on the same Move), the envelopes are delivered in batch
+    /// order — the PressCancel action runs FIRST. The Swipe is then
+    /// re-validated against its CAPTURED handler owner with the
+    /// post-action state (the PressCancel may have disabled it), and the
+    /// claim is dropped from BOTH the returned batch and delivery when
+    /// the owner no longer provides an enabled `onSwipe` — never
+    /// re-resolved to an ancestor handler, whose thresholds never
+    /// qualified. Ordering is therefore exactly: PressCancel action,
+    /// then attempted Swipe validation; state is never frozen before the
+    /// PressCancel action.
+    pub fn dispatch_pointer_events(&mut self, event: PointerEvent) -> Vec<SemanticEventEnvelope> {
         self.note_time(event.t_ms);
-        if self.input_frozen() {
-            return Vec::new();
+        // (1)+(2) Drive due timers at this event's timestamp and deliver
+        // their actions before ANY current side effect. The deadline is
+        // order-independent: whether the host calls `tick(deadline)`
+        // first or dispatches the next input at the deadline first, the
+        // due LongPress/ContextMenu/Tap surfaces before the current
+        // processing observes anything. While frozen, arena timers stay
+        // inert (R2A): only the already-derived deferred Tap is flushed.
+        // The Cancel exception above applies with per-pointer isolation:
+        // a host-sent Cancel ticks every arena EXCEPT the canceling
+        // pointer's own (a due LongPress/ContextMenu on another pointer
+        // still fires; the canceled pointer's timer must not claim off
+        // the cancel) and flushes a due pending Tap.
+        let mut due = if self.input_frozen() {
+            self.gestures.flush_pending_tap(event.t_ms)
+        } else if matches!(event.phase, PointerPhase::Cancel) {
+            self.gestures.tick_enveloped_except(event.id.0, event.t_ms)
+        } else {
+            self.gestures.tick_enveloped(event.t_ms)
+        };
+        for ev in &due {
+            // Due envelopes are the tail of a PREVIOUS gesture (a flushed
+            // pending Tap, an expired LongPress). The pending activation
+            // certifies the event being dispatched NOW, so these deliver
+            // uncertified rather than spending it first.
+            self.deliver_enveloped(ev, false);
         }
-        if self.document.is_none() {
-            return Vec::new();
+        // (3) Re-check after the due actions: the current event is gated
+        // by the post-due state, not the entry state, while the already-
+        // delivered due envelopes are never dropped.
+        if self.input_frozen() || self.document.is_none() {
+            return due;
         }
-        // Slider drag is handled directly off the raw pointer phases
-        // (the gesture arena only surfaces Tap on Down+Up): Down over a
-        // slider arms a drag, Move scrubs the value, Up disarms it. This
-        // runs *before* the arena dispatch so a drag and a tap don't
-        // double-set the value — a clean Down+Up still lands as a Tap.
-        let (phase, position) = (event.phase, event.position);
-        self.handle_slider_drag(phase, position);
+        // (4) Current event. Slider drag is handled directly off the raw
+        // pointer phases (the gesture arena only surfaces Tap on Down+Up):
+        // Down over a slider arms a drag, Move scrubs the value,
+        // Up/Cancel disarms it. This runs *before* the arena dispatch so
+        // a drag and a tap don't double-set the value — a clean Down+Up
+        // still lands as a Tap.
+        self.handle_slider_drag(&event);
 
         let emitted = {
             let doc = self.document.as_ref().unwrap();
-            self.gestures.dispatch(event, doc, &self.spatial)
+            let state_ref = &self.state;
+            let expr_cache_ref = &self.expr_cache;
+            let page_id = self.active_page_key.clone();
+            let node_disabled = |key: crate::document::NodeKey| {
+                super::async_runtime::node_gestures_disabled(
+                    doc,
+                    state_ref,
+                    expr_cache_ref,
+                    &page_id,
+                    key,
+                )
+            };
+            // Internal current-event path: the router does NOT flush a due
+            // pending Tap here — we just flushed and delivered it above —
+            // so it can never be collected twice.
+            self.gestures
+                .dispatch_current(event, doc, &self.spatial, &node_disabled)
         };
-        // A tap on an interactive widget focuses it and performs its
-        // primary action (toggle / slider set-by-x) before the generic
-        // onTap action dispatch.
-        for ev in &emitted {
-            if let SemanticEvent::Tap { node, position } = ev {
-                self.activate_widget_on_tap(*node, *position);
+        // ONE semantic-delivery path (widget activation included) runs for
+        // both pointer dispatch and `tick`; activation is inside it.
+        //
+        // Same-batch Swipe owner re-validation: the arena can derive
+        // `[PressCancel, Swipe]` in a SINGLE raw-event batch (the Move
+        // that claims). Envelopes are delivered in batch order, so a
+        // PressCancel action that dynamically disables the Swipe's
+        // captured owner (e.g. the child disables its own
+        // `gestures.disabled` from `onPressCancel`) has ALREADY run by
+        // the time the Swipe envelope is considered. The Swipe is then
+        // re-validated against that CAPTURED owner — not the arena-build
+        // snapshot, not an ancestor search — and dropped from the
+        // host-visible batch when the owner no longer provides an enabled
+        // `onSwipe`; a parent whose thresholds never qualified must never
+        // receive it. `deliver_enveloped` applies the same owner-anchored
+        // rule as its own backstop.
+        let mut current = Vec::with_capacity(emitted.len());
+        for ev in emitted {
+            if matches!(ev.event, SemanticEvent::Swipe { .. }) && !self.swipe_owner_enabled(&ev) {
+                continue;
             }
+            // Current-input envelopes MAY consume the certification; the
+            // delivery path spends it on the first chain that runs.
+            self.deliver_enveloped(&ev, true);
+            current.push(ev);
         }
-        for ev in &emitted {
-            self.dispatch_semantic(ev);
-        }
-        emitted
+        // (5) Due envelopes first, then current envelopes.
+        due.extend(current);
+        due
+    }
+
+    /// Re-evaluate a claimed Swipe against its CAPTURED handler owner at
+    /// delivery time: the owner must still exist, declare an enabled
+    /// (nonempty, not `disabledEvents`-slated, not dynamically disabled)
+    /// `onSwipe`. Uses the same owner-anchored resolution as
+    /// [`super::async_runtime`]'s delivery — the runtime pointer path
+    /// calls it BETWEEN envelopes of one batch, after the batch's prior
+    /// actions ran, so a same-batch `PressCancel` that disabled the
+    /// owner makes this return `false` and the claim is dropped.
+    fn swipe_owner_enabled(&self, ev: &SemanticEventEnvelope) -> bool {
+        use crate::gesture::dispatcher;
+        let Some(doc) = self.document.as_ref() else {
+            return false;
+        };
+        let state_ref = &self.state;
+        let expr_cache_ref = &self.expr_cache;
+        let page_id = self.active_page_key.clone();
+        let node_disabled = |key: crate::document::NodeKey| {
+            super::async_runtime::node_gestures_disabled(
+                doc,
+                state_ref,
+                expr_cache_ref,
+                &page_id,
+                key,
+            )
+        };
+        dispatcher::resolve_swipe_owner(doc, &ev.event, node_disabled).is_some()
     }
 
     /// Pointer-phase driven slider scrubbing. On `Down` over a slider,
     /// focus it and arm the drag (`Slider.dragging = true`). On `Move`
     /// while any slider is armed, set that slider's value from x and
-    /// sync its `bind:value`. On `Up`, disarm every slider. No-op when
-    /// no slider is under the cursor / armed.
-    fn handle_slider_drag(
-        &mut self,
-        phase: crate::gesture::pointer::PointerPhase,
-        position: crate::geometry::Point,
-    ) {
-        use crate::gesture::pointer::PointerPhase;
+    /// sync its `bind:value`. On `Up`/`Cancel`, disarm every slider.
+    /// No-op when no slider is under the cursor / armed.
+    ///
+    /// Raw drag arming requires a provable primary interaction: Touch
+    /// contact or a Down whose button bitmask is EXACTLY LEFT. A factual
+    /// right-button (or ambiguous multi-button) Down must never focus,
+    /// arm or change a Slider — the router treats right-only presses as
+    /// closed sequences, and the drag path must not re-open them.
+    ///
+    /// A disabled Slider is inert: the drag path honors the same gate as
+    /// the widget-activation path — static `gestures.disabledEvents`
+    /// listing `onTap`, or a truthy `gestures.disabled` expression
+    /// (malformed/non-bool stays fail-open). A disabled Down must not
+    /// focus, arm, mutate or sync the slider; a Move that finds the
+    /// armed slider disabled since its Down disarms it immediately and
+    /// does not mutate or sync.
+    fn handle_slider_drag(&mut self, event: &crate::gesture::pointer::PointerEvent) {
+        use crate::gesture::pointer::{MouseButtons, PointerKind, PointerPhase};
         use crate::widget_state::WidgetState;
         use jian_ops_schema::node::PenNode;
 
-        match phase {
+        match event.phase {
             PointerPhase::Down => {
+                let provable_primary =
+                    matches!(event.kind, PointerKind::Touch) || event.buttons == MouseButtons::LEFT;
+                if !provable_primary {
+                    return;
+                }
                 // Topmost hit node that is a slider arms a drag.
                 let Some(doc) = self.document.as_ref() else {
                     return;
                 };
-                let hit = crate::gesture::hit::hit_test(&self.spatial, doc, position);
+                let hit = crate::gesture::hit::hit_test(&self.spatial, doc, event.position);
                 let slider = hit.0.iter().copied().find(|&k| {
                     matches!(
                         doc.tree.nodes.get(k).map(|n| &n.schema),
@@ -99,19 +266,31 @@ impl Runtime {
                     )
                 });
                 if let Some(node) = slider {
-                    let id = {
-                        let schema = &doc.tree.nodes[node].schema;
-                        crate::document::tree::node_schema_id(schema).to_owned()
+                    // Evaluate the inert gate while every borrow is
+                    // immutable; the check ends before any `&mut self`
+                    // side effect below (focus, arm, scrub, sync).
+                    let inert = {
+                        let state = &self.state;
+                        let expr_cache = &self.expr_cache;
+                        let page_id = &self.active_page_key;
+                        slider_drag_inert(doc, state, expr_cache, page_id, node)
                     };
-                    let _ = self.focus_request(node);
-                    self.with_widget_state(node, |st| {
-                        if let WidgetState::Slider { dragging, .. } = st {
-                            *dragging = true;
+                    if !inert {
+                        let id = {
+                            let schema = &doc.tree.nodes[node].schema;
+                            crate::document::tree::node_schema_id(schema).to_owned()
+                        };
+                        let _ = self.focus_request(node);
+                        self.with_widget_state(node, |st| {
+                            if let WidgetState::Slider { dragging, .. } = st {
+                                *dragging = true;
+                            }
+                            false
+                        });
+                        if self.set_slider_from_x(node, event.position.x) {
+                            self.sync_widget_binding(&id);
+                            self.dispatch_widget_change(&id);
                         }
-                        false
-                    });
-                    if self.set_slider_from_x(node, position.x) {
-                        self.sync_widget_binding(&id);
                     }
                 }
             }
@@ -123,15 +302,35 @@ impl Runtime {
                     matches!(st, WidgetState::Slider { dragging: true, .. }).then(|| id.to_owned())
                 });
                 let Some(id) = armed_id else { return };
-                let node = self.document.as_ref().and_then(|doc| doc.tree.get(&id));
-                if let Some(node) = node {
-                    if self.set_slider_from_x(node, position.x) {
-                        self.sync_widget_binding(&id);
-                    }
+                let Some(node) = self.document.as_ref().and_then(|doc| doc.tree.get(&id)) else {
+                    return;
+                };
+                // If the armed slider became disabled since its Down,
+                // disarm it immediately and never scrub/sync it.
+                let inert = {
+                    let doc = self.document.as_ref().unwrap();
+                    let state = &self.state;
+                    let expr_cache = &self.expr_cache;
+                    let page_id = &self.active_page_key;
+                    slider_drag_inert(doc, state, expr_cache, page_id, node)
+                };
+                if inert {
+                    self.with_widget_state(node, |st| {
+                        if let WidgetState::Slider { dragging, .. } = st {
+                            *dragging = false;
+                        }
+                        false
+                    });
+                    return;
+                }
+                if self.set_slider_from_x(node, event.position.x) {
+                    self.sync_widget_binding(&id);
+                    self.dispatch_widget_change(&id);
                 }
             }
-            PointerPhase::Up => {
-                // Disarm any armed slider.
+            PointerPhase::Up | PointerPhase::Cancel => {
+                // Disarm any armed slider exactly like an Up; a later Move
+                // must not scrub a canceled pointer's drag.
                 for st in self.widget_states.values_mut() {
                     if let WidgetState::Slider { dragging, .. } = st {
                         *dragging = false;
@@ -146,7 +345,11 @@ impl Runtime {
     /// switch/checkbox, flip it; for a slider, set its value from the
     /// tap x within the track. Syncs `bind:value` afterwards. Other
     /// widgets just take focus (text editing / popups come via keys).
-    fn activate_widget_on_tap(
+    ///
+    /// Lives on the single semantic-delivery path used by BOTH pointer
+    /// dispatch and `tick`, so a deferred (double-tap-window) Tap still
+    /// activates its widget when the deadline flushes it.
+    pub(super) fn activate_widget_on_tap(
         &mut self,
         node: crate::document::NodeKey,
         position: crate::geometry::Point,
@@ -206,6 +409,7 @@ impl Runtime {
         };
         if changed {
             self.sync_widget_binding(&id);
+            self.dispatch_widget_change(&id);
             if matches!(act, Act::Tabs) {
                 // Panels share the same laid-out grid cell, so switching does
                 // not require layout. It does require hit and focus indexes to
@@ -367,4 +571,20 @@ fn json_has_event_handler(node: &jian_ops_schema::node::PenNode, key: &str) -> b
         Some(Value::Null) | None => false,
         Some(_) => true,
     }
+}
+
+/// Raw slider-drag inert-ness: the slider is gated by the SAME test the
+/// widget-activation path uses — statically slated (`gestures.disabledEvents`
+/// lists `onTap`) or a truthy `gestures.disabled` expression. A malformed /
+/// non-bool `disabled` expression disables nothing (`node_gestures_disabled`
+/// is fail-open), consistent with bindings.
+fn slider_drag_inert(
+    doc: &crate::document::RuntimeDocument,
+    state: &crate::state::StateGraph,
+    expr_cache: &crate::expression::ExpressionCache,
+    page_id: &str,
+    key: crate::document::NodeKey,
+) -> bool {
+    crate::gesture::config::node_disables_handler(doc, key, "onTap")
+        || super::async_runtime::node_gestures_disabled(doc, state, expr_cache, page_id, key)
 }

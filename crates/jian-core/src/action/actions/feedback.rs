@@ -1,9 +1,10 @@
 //! UI feedback actions: `toast`, `alert`, `confirm`.
 
 use crate::action::action_trait::{ActionChain, ActionImpl, BoxedAction};
-use crate::action::context::ActionContext;
+use crate::action::context::{ActionContext, EffectRequestContext};
 use crate::action::error::{ActionError, ActionResult};
 use crate::action::registry::ActionRegistry;
+use crate::action::services::effect_sink::{EffectCompletionResult, EffectOutcome, EffectRequest};
 use crate::action::services::FeedbackLevel;
 use crate::expression::Expression;
 use async_trait::async_trait;
@@ -39,6 +40,30 @@ impl ActionImpl for Toast {
         );
         for w in ws {
             ctx.warn(w);
+        }
+        // R3: hand the effect to the host sink; `Unsupported` falls back
+        // to the legacy service so non-Preview runtimes keep their
+        // behavior (the same pattern guards every effect action).
+        let ectx = EffectRequestContext {
+            handler: ctx.handler.clone(),
+            node_id: ctx.node_id.clone(),
+            activation: ctx.activation,
+            at_ms: ctx.now_ms(),
+        };
+        let request = EffectRequest::Toast {
+            message: v.as_str().unwrap_or("").to_owned(),
+        };
+        match ctx.effect_sink.request(&ectx, &request) {
+            EffectOutcome::Accepted | EffectOutcome::AcceptedWithCompletion(_) => return Ok(()),
+            EffectOutcome::Rejected(detail) => {
+                ctx.warn(crate::expression::Diagnostic {
+                    kind: crate::expression::DiagKind::RuntimeWarning,
+                    message: format!("toast: {detail}"),
+                    span: crate::expression::Span::zero(),
+                });
+                return Ok(());
+            }
+            EffectOutcome::Unsupported => {}
         }
         ctx.feedback
             .toast(v.as_str().unwrap_or(""), self.level, self.duration_ms);
@@ -112,6 +137,28 @@ impl ActionImpl for Alert {
         for w in ws {
             ctx.warn(w);
         }
+        let ectx = EffectRequestContext {
+            handler: ctx.handler.clone(),
+            node_id: ctx.node_id.clone(),
+            activation: ctx.activation,
+            at_ms: ctx.now_ms(),
+        };
+        let request = EffectRequest::Alert {
+            title: t.as_str().unwrap_or("").to_owned(),
+            message: m.as_str().unwrap_or("").to_owned(),
+        };
+        match ctx.effect_sink.request(&ectx, &request) {
+            EffectOutcome::Accepted | EffectOutcome::AcceptedWithCompletion(_) => return Ok(()),
+            EffectOutcome::Rejected(detail) => {
+                ctx.warn(crate::expression::Diagnostic {
+                    kind: crate::expression::DiagKind::RuntimeWarning,
+                    message: format!("alert: {detail}"),
+                    span: crate::expression::Span::zero(),
+                });
+                return Ok(());
+            }
+            EffectOutcome::Unsupported => {}
+        }
         ctx.feedback
             .alert(t.as_str().unwrap_or(""), m.as_str().unwrap_or(""));
         Ok(())
@@ -170,6 +217,44 @@ impl ActionImpl for Confirm {
             ctx.node_id.as_deref(),
             &locals,
         );
+        // R3: through the sink, a Confirm is a HOST-completed effect —
+        // the queue's later `complete` result is what resumes the
+        // on_confirm/on_cancel continuations (resumption wiring lands
+        // with the debug/controls slice). `Unsupported` keeps the legacy
+        // inline-await path so non-Preview runtimes are unchanged.
+        let ectx = EffectRequestContext {
+            handler: ctx.handler.clone(),
+            node_id: ctx.node_id.clone(),
+            activation: ctx.activation,
+            at_ms: ctx.now_ms(),
+        };
+        let request = EffectRequest::Confirm {
+            title: t.as_str().unwrap_or("").to_owned(),
+            message: m.as_str().unwrap_or("").to_owned(),
+        };
+        match ctx.effect_sink.request(&ectx, &request) {
+            EffectOutcome::Accepted => return Ok(()),
+            EffectOutcome::AcceptedWithCompletion(completion) => {
+                let confirmed = matches!(completion.await, EffectCompletionResult::Success);
+                if confirmed {
+                    if let Some(ref chain) = self.on_confirm {
+                        chain.run_serial(ctx).await?;
+                    }
+                } else if let Some(ref chain) = self.on_cancel {
+                    chain.run_serial(ctx).await?;
+                }
+                return Ok(());
+            }
+            EffectOutcome::Rejected(detail) => {
+                ctx.warn(crate::expression::Diagnostic {
+                    kind: crate::expression::DiagKind::RuntimeWarning,
+                    message: format!("confirm: {detail}"),
+                    span: crate::expression::Span::zero(),
+                });
+                return Ok(());
+            }
+            EffectOutcome::Unsupported => {}
+        }
         let ok = ctx
             .async_fb
             .confirm(t.as_str().unwrap_or(""), m.as_str().unwrap_or(""))

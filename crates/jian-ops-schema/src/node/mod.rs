@@ -20,6 +20,7 @@ pub mod tabs;
 pub mod text;
 pub mod text_area;
 pub mod text_input;
+pub mod video;
 
 pub use base::{BoolOrExpression, MaskType, NumberOrExpression, PenNodeBase};
 pub use checkbox::CheckboxNode;
@@ -49,6 +50,7 @@ pub use text::{
 };
 pub use text_area::TextAreaNode;
 pub use text_input::TextInputNode;
+pub use video::VideoMeta;
 
 use serde::{Deserialize, Serialize};
 
@@ -83,6 +85,71 @@ pub enum PenNode {
 }
 
 impl PenNode {
+    /// Borrow the node-level motion declarations without serializing the
+    /// recursive node tree.
+    pub fn motion_declarations(
+        &self,
+    ) -> (
+        Option<&crate::motion::Transition>,
+        Option<&Vec<crate::motion::NodeAnimation>>,
+    ) {
+        match self {
+            PenNode::Frame(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::Group(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::Rectangle(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Ellipse(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Line(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::Polygon(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Path(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::Text(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::TextInput(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Image(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::IconFont(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::TextArea(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Select(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::Switch(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::Checkbox(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Slider(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::RadioGroup(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::NumberInput(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Progress(node) => {
+                (node.base.transition.as_ref(), node.base.animations.as_ref())
+            }
+            PenNode::Tabs(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+            PenNode::Ref(node) => (node.base.transition.as_ref(), node.base.animations.as_ref()),
+        }
+    }
+
+    /// Children of a container node, if it has a children field.
+    pub fn children_ref(&self) -> Option<&[PenNode]> {
+        match self {
+            PenNode::Frame(node) => node.children.as_deref(),
+            PenNode::Group(node) => node.children.as_deref(),
+            PenNode::Rectangle(node) => node.children.as_deref(),
+            PenNode::Tabs(node) => node.children.as_deref(),
+            PenNode::Ref(node) => node.children.as_deref(),
+            _ => None,
+        }
+    }
+
     /// Borrow the optional `gestures` and `semantics` blocks from any
     /// variant. Used by the focus-chain extractor in `jian-core` to
     /// avoid round-tripping the entire schema through
@@ -120,6 +187,37 @@ impl PenNode {
             PenNode::Progress(n) => (n.gestures.as_ref(), n.semantics.as_ref()),
             PenNode::Tabs(n) => (n.gestures.as_ref(), n.semantics.as_ref()),
             PenNode::Ref(n) => (n.gestures.as_ref(), n.semantics.as_ref()),
+        }
+    }
+
+    /// Borrow the optional `lifecycle` block from any variant, the same
+    /// typed way `gestures_and_semantics` exposes gestures/semantics.
+    /// Runtime lifecycle dispatch resolves `onMount` / `onUnmount`
+    /// through this accessor instead of round-tripping the node schema
+    /// through `serde_json::to_value`.
+    pub fn lifecycle(&self) -> Option<&crate::lifecycle::NodeLifecycleHooks> {
+        match self {
+            PenNode::Frame(n) => n.lifecycle.as_ref(),
+            PenNode::Group(n) => n.lifecycle.as_ref(),
+            PenNode::Rectangle(n) => n.lifecycle.as_ref(),
+            PenNode::Ellipse(n) => n.lifecycle.as_ref(),
+            PenNode::Line(n) => n.lifecycle.as_ref(),
+            PenNode::Polygon(n) => n.lifecycle.as_ref(),
+            PenNode::Path(n) => n.lifecycle.as_ref(),
+            PenNode::Text(n) => n.lifecycle.as_ref(),
+            PenNode::TextInput(n) => n.lifecycle.as_ref(),
+            PenNode::Image(n) => n.lifecycle.as_ref(),
+            PenNode::IconFont(n) => n.lifecycle.as_ref(),
+            PenNode::TextArea(n) => n.lifecycle.as_ref(),
+            PenNode::Select(n) => n.lifecycle.as_ref(),
+            PenNode::Switch(n) => n.lifecycle.as_ref(),
+            PenNode::Checkbox(n) => n.lifecycle.as_ref(),
+            PenNode::Slider(n) => n.lifecycle.as_ref(),
+            PenNode::RadioGroup(n) => n.lifecycle.as_ref(),
+            PenNode::NumberInput(n) => n.lifecycle.as_ref(),
+            PenNode::Progress(n) => n.lifecycle.as_ref(),
+            PenNode::Tabs(n) => n.lifecycle.as_ref(),
+            PenNode::Ref(n) => n.lifecycle.as_ref(),
         }
     }
 }

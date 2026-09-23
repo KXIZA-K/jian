@@ -9,6 +9,9 @@ pub enum ActionError {
     #[error("unknown action `{0}`")]
     UnknownAction(String),
 
+    #[error("UnknownAnimatableProperty: '{property}'")]
+    UnknownAnimatableProperty { property: String },
+
     #[error("action `{name}`: missing required field `{field}`")]
     MissingField {
         name: &'static str,
@@ -30,6 +33,9 @@ pub enum ActionError {
         action: &'static str,
         needed: Capability,
     },
+
+    #[error("policy rejected action `{action}`")]
+    PolicyRejected { action: String },
 
     #[error("action aborted")]
     Aborted,

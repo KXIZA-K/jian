@@ -120,13 +120,13 @@ fn dispatch_keyboard_tab_walks_focus_chain() {
     assert_eq!(chain_ids, vec!["a", "b", "c"]);
 
     // First Tab — no previous focus → only FocusGained on "a".
-    let evs = rt.dispatch_keyboard("Tab", Modifiers::empty());
+    let evs = rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::empty());
     assert_eq!(evs.len(), 1);
     assert!(matches!(evs[0], SemanticEvent::FocusGained { .. }));
     assert_eq!(id_of(&rt, evs[0].node()), "a");
 
     // Second Tab — blur "a", focus "b".
-    let evs = rt.dispatch_keyboard("Tab", Modifiers::empty());
+    let evs = rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::empty());
     assert_eq!(evs.len(), 2);
     assert!(matches!(evs[0], SemanticEvent::FocusLost { .. }));
     assert!(matches!(evs[1], SemanticEvent::FocusGained { .. }));
@@ -134,7 +134,7 @@ fn dispatch_keyboard_tab_walks_focus_chain() {
     assert_eq!(id_of(&rt, evs[1].node()), "b");
 
     // Shift+Tab — blur "b", focus "a" (step backward).
-    let evs = rt.dispatch_keyboard("Tab", Modifiers::SHIFT);
+    let evs = rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::SHIFT);
     assert_eq!(evs.len(), 2);
     assert_eq!(id_of(&rt, evs[0].node()), "b");
     assert_eq!(id_of(&rt, evs[1].node()), "a");
@@ -169,10 +169,10 @@ fn dispatch_keyboard_non_tab_routes_to_focused_node() {
     rt.build_layout((400.0, 300.0)).unwrap();
 
     // Tab in to focus the input.
-    rt.dispatch_keyboard("Tab", Modifiers::empty());
+    rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::empty());
     assert!(rt.focus.current().is_some());
 
-    let evs = rt.dispatch_keyboard("Enter", Modifiers::empty());
+    let evs = rt.dispatch_keyboard("Enter", "Enter", false, Modifiers::empty());
     assert_eq!(evs.len(), 1);
     assert!(matches!(evs[0], SemanticEvent::KeyDown { .. }));
 
@@ -216,7 +216,7 @@ fn focus_handlers_fire_on_chain_step() {
     rt.build_layout((400.0, 300.0)).unwrap();
 
     // Tab in → gained == 1, lost == 0.
-    rt.dispatch_keyboard("Tab", Modifiers::empty());
+    rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::empty());
     assert_eq!(
         rt.state.app_get("gained").and_then(|v| v.as_i64()).unwrap(),
         1
@@ -228,7 +228,7 @@ fn focus_handlers_fire_on_chain_step() {
 
     // Tab to "b" → "a" loses focus, "b" gains. Only "a" has
     // handlers, so gained stays at 1 and lost ticks to 1.
-    rt.dispatch_keyboard("Tab", Modifiers::empty());
+    rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::empty());
     assert_eq!(
         rt.state.app_get("gained").and_then(|v| v.as_i64()).unwrap(),
         1
@@ -257,7 +257,7 @@ fn replace_document_rebuilds_focus_chain() {
     )
     .unwrap();
     rt.build_layout((400.0, 300.0)).unwrap();
-    rt.dispatch_keyboard("Tab", Modifiers::empty());
+    rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::empty());
     assert!(rt.focus.current().is_some());
 
     rt.replace_document(
@@ -280,7 +280,7 @@ fn replace_document_rebuilds_focus_chain() {
     let chain_len = rt.focus.chain().len();
     assert_eq!(chain_len, 2);
 
-    rt.dispatch_keyboard("Tab", Modifiers::empty());
+    rt.dispatch_keyboard("Tab", "Tab", false, Modifiers::empty());
     // First Tab post-reload focuses the new chain's first node.
     let cur = rt.focus.current().unwrap();
     let id = crate::document::tree::node_schema_id(
@@ -317,19 +317,25 @@ fn replace_document_resets_pointer_router_state() {
     // `last_hover_target` regardless of whether the node carries
     // an `onHover*` handler (handle_hover unconditionally
     // updates `last_hover_target` to the topmost hit).
-    let _enter = rt.dispatch_pointer(PointerEvent::simple(
-        0,
-        PointerPhase::Hover,
-        point(20.0, 20.0),
-    ));
+    // NOTE: hover must be a Mouse/Pen pointer — Touch is contractually
+    // excluded from hover processing (never emits hover actions nor
+    // mutates the hover cache).
+    let mouse_hover = |id: u32, x: f32, y: f32| PointerEvent {
+        id: crate::gesture::PointerId(id),
+        kind: crate::gesture::PointerKind::Mouse,
+        phase: PointerPhase::Hover,
+        position: point(x, y),
+        pressure: 0.0,
+        buttons: Default::default(),
+        modifiers: Default::default(),
+        tilt: None,
+        t_ms: 0,
+    };
+    let _enter = rt.dispatch_pointer(mouse_hover(0, 20.0, 20.0));
     // Sanity: a second hover off the rectangle would normally
     // emit `HoverLeave` for the stamped target — that's the
     // path that goes wrong on hot-reload without the reset.
-    let leave = rt.dispatch_pointer(PointerEvent::simple(
-        0,
-        PointerPhase::Hover,
-        point(500.0, 500.0),
-    ));
+    let leave = rt.dispatch_pointer(mouse_hover(0, 500.0, 500.0));
     assert!(
         leave
             .iter()
@@ -339,11 +345,7 @@ fn replace_document_resets_pointer_router_state() {
     );
 
     // Re-stamp last_hover_target by hovering over the rect again.
-    rt.dispatch_pointer(PointerEvent::simple(
-        0,
-        PointerPhase::Hover,
-        point(20.0, 20.0),
-    ));
+    rt.dispatch_pointer(mouse_hover(0, 20.0, 20.0));
 
     // Hot-reload to a different document.
     rt.replace_document(
@@ -365,11 +367,7 @@ fn replace_document_resets_pointer_router_state() {
     // (against a SlotMap key that may or may not alias a real
     // node in the new tree). Post-fix the router is reset, so
     // the off-target hover emits nothing.
-    let off = rt.dispatch_pointer(PointerEvent::simple(
-        0,
-        PointerPhase::Hover,
-        point(500.0, 500.0),
-    ));
+    let off = rt.dispatch_pointer(mouse_hover(0, 500.0, 500.0));
     assert!(
         !off.iter()
             .any(|e| matches!(e, SemanticEvent::HoverLeave { .. })),
@@ -609,4 +607,74 @@ fn projected_screen_root_is_viewport_sized() {
     let rect = runtime.layout.node_rect(root).unwrap();
     assert_eq!((rect.size.width, rect.size.height), (320.0, 480.0));
     assert!(runtime.layout.is_origin_normalized(root));
+}
+
+/// Raw-pointer escape hatch end-to-end: a pointer Down inside a
+/// `gestures.rawPointer` subtree routes as `SemanticEvent::RawPointer`
+/// and the dispatcher must resolve and execute the authored
+/// `onRawPointer` ActionList (gesture event → dispatcher → expression
+/// VM → state write). R1 Blocker 1 runtime regression — `semantic.rs`
+/// already maps `RawPointer` → `onRawPointer`, so this pins the whole
+/// execution path independent of AOT coverage.
+#[test]
+fn raw_pointer_handler_executes_end_to_end() {
+    use crate::geometry::point;
+    use crate::gesture::pointer::{PointerEvent, PointerPhase};
+    let mut rt = Runtime::new();
+    rt.load_str(
+        r#"{
+              "version":"0.8.0",
+              "state":{ "raws": { "type":"int", "default":0 } },
+              "children":[
+                { "type":"frame","id":"pad","x":0,"y":0,"width":200,"height":200,
+                  "gestures":{ "rawPointer":true },
+                  "events":{ "onRawPointer": [ { "set": { "$app.raws": "$state.raws + 1" } } ] }
+                }
+              ]
+            }"#,
+    )
+    .unwrap();
+    rt.build_layout((400.0, 300.0)).unwrap();
+    rt.rebuild_spatial();
+
+    // Down inside the rawPointer subtree → one `RawPointer` semantic
+    // event, and the handler's `set` writes the state immediately.
+    let emitted = rt.dispatch_pointer(PointerEvent::simple(
+        0,
+        PointerPhase::Down,
+        point(50.0, 50.0),
+    ));
+    assert_eq!(emitted.len(), 1, "raw subtree must emit exactly RawPointer");
+    assert!(matches!(
+        emitted[0],
+        SemanticEvent::RawPointer {
+            phase: PointerPhase::Down,
+            ..
+        }
+    ));
+    assert_eq!(
+        rt.state.app_get("raws").and_then(|v| v.as_i64()).unwrap(),
+        1,
+        "onRawPointer ActionList must execute on the Down phase"
+    );
+
+    // The same pointer's subsequent Move keeps flowing to the raw root
+    // (no arena re-arming) and fires the handler again.
+    let emitted = rt.dispatch_pointer(PointerEvent::simple(
+        0,
+        PointerPhase::Move,
+        point(60.0, 60.0),
+    ));
+    assert!(matches!(
+        emitted[0],
+        SemanticEvent::RawPointer {
+            phase: PointerPhase::Move,
+            ..
+        }
+    ));
+    assert_eq!(
+        rt.state.app_get("raws").and_then(|v| v.as_i64()).unwrap(),
+        2,
+        "onRawPointer ActionList must execute on Move phases too"
+    );
 }

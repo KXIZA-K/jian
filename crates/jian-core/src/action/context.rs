@@ -36,6 +36,19 @@ pub struct WsHandle {
 /// matches the rest of the runtime model.
 pub type WsSessionRegistry = Rc<RefCell<HashMap<String, WsHandle>>>;
 
+/// Factual source context carried with every effect request: the
+/// handler key that spawned the chain, the resolved handler-owner node,
+/// and the host-certified activation id when the dispatching input
+/// carried fresh user intent. The sink maps these onto its host DTOs;
+/// missing facts stay absent, never guessed.
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct EffectRequestContext {
+    pub handler: Option<String>,
+    pub node_id: Option<String>,
+    pub activation: Option<u64>,
+    pub at_ms: u64,
+}
+
 pub struct ActionContext {
     pub state: Rc<StateGraph>,
     pub scheduler: Rc<Scheduler>,
@@ -50,6 +63,8 @@ pub struct ActionContext {
 
     pub page_id: Option<String>,
     pub node_id: Option<String>,
+    /// Factual handler key for provenance and effect source attribution.
+    pub handler: Option<String>,
 
     pub network: Rc<dyn NetworkClient>,
     pub ws_sessions: WsSessionRegistry,
@@ -61,6 +76,27 @@ pub struct ActionContext {
     pub platform: Rc<dyn super::services::PlatformService>,
 
     pub capabilities: Rc<dyn CapabilityGate>,
+    /// R3 action policy guard — `None` means "no policy" (every
+    /// registered action executes, today's behavior). Preview runtimes
+    /// install the fixed allowlist.
+    pub policy: Option<Rc<dyn super::policy::ActionPolicy>>,
+    /// R3 effect sink — every effect-producing action hands its request
+    /// here instead of touching host services directly.
+    pub effect_sink: Rc<dyn super::services::effect_sink::EffectSink>,
+    /// R5 platform-neutral runtime-node mutation sink. Preview runtimes
+    /// install retained state; other runtimes use the diagnostic null sink.
+    pub ui_mutation_sink: Rc<dyn super::services::ui_mutation_sink::UiMutationSink>,
+    /// R7 structured animation delivery. Preview installs one bounded
+    /// session timeline; other runtimes use the diagnostic null sink.
+    pub animation_sink: Rc<dyn super::services::animation_sink::AnimationSink>,
+    /// R9 action execution observer. Nested ActionLists inherit the same
+    /// observer through their shared ActionContext.
+    pub observer: Rc<dyn super::services::observer::ActionObserver>,
+    /// Host-certified activation id for the ActionList this context
+    /// serves (`None` when the dispatching input carried none). The
+    /// action's effect requests inherit it; delayed/async work spawned
+    /// later builds a fresh context and therefore sees none.
+    pub activation: Option<u64>,
     /// Tier-3 logic provider. `NullLogicProvider` is installed by
     /// default; hosts override via `Runtime::set_logic_provider`.
     pub logic: Rc<dyn LogicProvider>,
@@ -129,6 +165,7 @@ pub(crate) mod tests {
             locals: RefCell::new(BTreeMap::new()),
             page_id: None,
             node_id: None,
+            handler: None,
             network: Rc::new(NullNetworkClient),
             ws_sessions: Rc::new(RefCell::new(HashMap::new())),
             storage: Rc::new(NullStorageBackend),
@@ -138,6 +175,12 @@ pub(crate) mod tests {
             clipboard: Rc::new(NullClipboard),
             platform: Rc::new(crate::action::services::NullPlatform),
             capabilities: Rc::new(DummyCapabilityGate),
+            policy: None,
+            effect_sink: Rc::new(crate::action::services::effect_sink::NullEffectSink),
+            ui_mutation_sink: Rc::new(crate::action::services::NullUiMutationSink),
+            animation_sink: Rc::new(crate::action::services::NullAnimationSink),
+            observer: Rc::new(crate::action::services::NullActionObserver),
+            activation: None,
             logic: Rc::new(crate::logic::NullLogicProvider),
             expr_cache: Rc::new(ExpressionCache::new()),
             cancel: CancellationToken::new(),
